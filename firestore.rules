@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+
+    match /users/{uid} {
+      allow read, create, update: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Catalogue is read-only for clients; manage via console / admin SDK.
+    match /venues/{id} { allow read: if signedIn(); allow write: if false; }
+    match /courts/{id} { allow read: if signedIn(); allow write: if false; }
+
+    // Hourly slot locks. Deterministic ids (courtId_date_hour) make double-booking impossible.
+    match /slots/{slotId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'PENDING';
+      // an expired, unpaid hold may be taken over by someone else
+      allow update: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'PENDING'
+        && resource.data.status == 'PENDING'
+        && resource.data.expiresAt < request.time;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /bookings/{id} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      // Clients can only create unpaid, pending bookings
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'PENDING_PAYMENT'
+        && request.resource.data.paymentStatus == 'UNPAID';
+      // ...and can only cancel. Payment fields are written exclusively by Cloud Functions.
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'CANCELLED';
+      allow delete: if false;
+    }
+  }
+}

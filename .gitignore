@@ -1,0 +1,14 @@
+*.iml
+.gradle/
+build/
+local.properties
+.idea/
+functions/node_modules/
+scripts/node_modules/
+serviceAccountKey.json
+
+app/google-services.json
+functions/.env
+
+app/google-services.json
+functions/.env
