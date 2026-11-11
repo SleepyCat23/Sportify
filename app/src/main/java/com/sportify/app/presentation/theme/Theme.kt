@@ -1,22 +1,39 @@
 package com.sportify.app.presentation.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val Light = lightColorScheme(
-    primary = Color(0xFF0B7A4B), onPrimary = Color.White,
-    primaryContainer = Color(0xFFB7F2CF), onPrimaryContainer = Color(0xFF002111),
-    secondary = Color(0xFF4F6354), tertiary = Color(0xFFE8762C)
-)
-private val Dark = darkColorScheme(
-    primary = Color(0xFF6CDBA0), onPrimary = Color(0xFF003920),
-    primaryContainer = Color(0xFF005230), onPrimaryContainer = Color(0xFFB7F2CF),
-    secondary = Color(0xFFB4CCB9), tertiary = Color(0xFFFFB68B)
+// Palette taken from the Sportify web design
+val Green = Color(0xFF0B7B4E)
+val Mint = Color(0xFFB8F0D0)
+val OnMint = Color(0xFF00391F)
+val Ink = Color(0xFF1A1C19)
+val Muted = Color(0xFF4F6355)
+val Peach = Color(0xFFFFDCC4)
+val PeachText = Color(0xFF5A2A00)
+val Orange = Color(0xFFE8762C)
+val TagBg = Color(0xFFE3EEE4)
+val DisabledBg = Color(0xFFEAEBE8)
+val Border = Color(0xFFDDE3DA)
+val Canvas = Color(0xFFFAFBF7)
+
+private val LightColors = lightColorScheme(
+    primary = Green, onPrimary = Color.White,
+    primaryContainer = Mint, onPrimaryContainer = OnMint,
+    secondary = Muted, secondaryContainer = Mint, onSecondaryContainer = OnMint,
+    tertiary = Orange, tertiaryContainer = Peach, onTertiaryContainer = PeachText,
+    background = Canvas, onBackground = Ink,
+    surface = Color.White, onSurface = Ink,
+    surfaceVariant = TagBg, onSurfaceVariant = Muted,
+    surfaceContainer = Color.White, surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = Color.White,
+    outline = Color(0xFF8C968C), outlineVariant = Border
 )
 
+/** The design is light-only, so the app always uses the light scheme. */
 @Composable
-fun SportifyTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (dark) Dark else Light, content = content)
+fun SportifyTheme(content: @Composable () -> Unit) {
+    MaterialTheme(colorScheme = LightColors, content = content)
 }

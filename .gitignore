@@ -12,3 +12,4 @@ functions/.env
 
 app/google-services.json
 functions/.env
+.DS_Store

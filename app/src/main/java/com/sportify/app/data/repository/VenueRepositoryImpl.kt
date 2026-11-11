@@ -23,6 +23,10 @@ class VenueRepositoryImpl @Inject constructor(private val db: FirebaseFirestore)
     override fun observeCourts(venueId: String): Flow<List<Court>> =
         db.collection("courts").whereEqualTo("venueId", venueId).asFlow(Court::class.java)
 
+    /** Used on the Explore screen to show each venue's "From … / hour" price. */
+    override fun observeAllCourts(): Flow<List<Court>> =
+        db.collection("courts").asFlow(Court::class.java)
+
     /** Hours already confirmed or held (non-expired pending) for a court on a date. */
     override fun observeBookedHours(courtId: String, date: String): Flow<Set<Int>> = callbackFlow {
         val reg = db.collection("slots")

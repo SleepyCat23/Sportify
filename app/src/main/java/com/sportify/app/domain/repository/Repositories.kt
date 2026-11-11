@@ -23,6 +23,7 @@ interface VenueRepository {
     fun observeVenues(): Flow<List<Venue>>
     fun observeVenue(id: String): Flow<Venue?>
     fun observeCourts(venueId: String): Flow<List<Court>>
+    fun observeAllCourts(): Flow<List<Court>>
     fun observeBookedHours(courtId: String, date: String): Flow<Set<Int>>
 }
 
