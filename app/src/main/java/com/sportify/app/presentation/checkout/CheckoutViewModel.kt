@@ -7,7 +7,6 @@ import com.sportify.app.domain.model.Booking
 import com.sportify.app.domain.model.PaymentSession
 import com.sportify.app.domain.repository.BookingRepository
 import com.sportify.app.domain.repository.PaymentRepository
-import com.stripe.android.paymentsheet.PaymentSheetResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -45,21 +44,22 @@ class CheckoutViewModel @Inject constructor(
 
     fun onSheetPresented() = local.update { it.copy(session = null) }
 
-    fun onPaymentResult(result: PaymentSheetResult) {
-        when (result) {
-            is PaymentSheetResult.Completed -> viewModelScope.launch {
-                // Fast path: server verifies the PaymentIntent with Stripe and confirms the booking.
-                // The Stripe webhook is the safety net if this call fails.
-                payments.confirmPayment(bookingId)
-                    .onFailure {
-                        local.update { it.copy(notice = "Payment received. Your booking will be confirmed in a moment.") }
-                    }
-                local.update { it.copy(busy = false) }
+    // The screen translates Stripe's PaymentSheetResult into these three calls,
+    // so this class has no dependency on the Stripe SDK and is easy to unit test.
+
+    fun onPaymentCompleted() {
+        viewModelScope.launch {
+            // Fast path: the server verifies the PaymentIntent with Stripe and confirms the booking.
+            // The Stripe webhook is the safety net if this call fails.
+            payments.confirmPayment(bookingId).onFailure {
+                local.update { s -> s.copy(notice = "Payment received. Your booking will be confirmed in a moment.") }
             }
-            is PaymentSheetResult.Canceled -> local.update { it.copy(busy = false) }
-            is PaymentSheetResult.Failed -> local.update {
-                it.copy(busy = false, error = result.error.localizedMessage ?: "Payment failed")
-            }
+            local.update { it.copy(busy = false) }
         }
     }
+
+    fun onPaymentCanceled() = local.update { it.copy(busy = false) }
+
+    fun onPaymentFailed(message: String?) =
+        local.update { it.copy(busy = false, error = message ?: "Payment failed") }
 }

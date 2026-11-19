@@ -1,6 +1,5 @@
 package com.sportify.app.domain.repository
 
-import android.net.Uri
 import com.sportify.app.domain.model.*
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
@@ -15,7 +14,7 @@ interface AuthRepository {
     fun signOut()
     fun observeProfile(): Flow<User?>
     suspend fun updateName(name: String): Result<Unit>
-    suspend fun uploadProfilePhoto(uri: Uri): Result<Unit>
+    suspend fun uploadProfilePhoto(uri: String): Result<Unit>
     suspend fun registerFcmToken(): Result<Unit>
 }
 

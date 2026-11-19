@@ -27,6 +27,13 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+    defaultConfig {
+        // keep your existing lines, and add this one
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -62,4 +69,13 @@ dependencies {
 
     // Payments (Stripe PaymentSheet: cards, Link, wallets)
     implementation("com.stripe:stripe-android:20.48.0")
+    // Unit tests (JVM)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+
+    // UI tests (emulator)
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.10.01"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

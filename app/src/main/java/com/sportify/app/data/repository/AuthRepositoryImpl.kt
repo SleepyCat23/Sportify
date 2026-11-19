@@ -76,10 +76,10 @@ class AuthRepositoryImpl @Inject constructor(
         Unit
     }
 
-    override suspend fun uploadProfilePhoto(uri: Uri): Result<Unit> = runCatching {
+    override suspend fun uploadProfilePhoto(uri: String): Result<Unit> = runCatching {
         val uid = currentUid ?: error("Not signed in")
         val ref = storage.reference.child("profile_photos/$uid.jpg")
-        ref.putFile(uri).await()
+        ref.putFile(Uri.parse(uri)).await()
         val url = ref.downloadUrl.await().toString()
         users.document(uid).set(mapOf("photoUrl" to url), SetOptions.merge()).await()
         auth.currentUser?.updateProfile(UserProfileChangeRequest.Builder().setPhotoUri(Uri.parse(url)).build())?.await()

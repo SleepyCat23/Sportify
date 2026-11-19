@@ -30,8 +30,19 @@ import com.sportify.app.presentation.common.*
 import com.sportify.app.presentation.theme.Green
 
 @Composable
-fun HomeScreen(onVenueClick: (String) -> Unit, vm: HomeViewModel = hiltViewModel()) {
+fun HomeRoute(onVenueClick: (String) -> Unit, vm: HomeViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
+    HomeScreen(state, vm::onQuery, vm::onSport, onVenueClick)
+}
+
+/** Stateless: everything arrives as parameters, so UI tests need no ViewModel or Hilt. */
+@Composable
+fun HomeScreen(
+    state: HomeState,
+    onQueryChange: (String) -> Unit,
+    onSportChange: (SportType?) -> Unit,
+    onVenueClick: (String) -> Unit
+) {
     Scaffold { pad ->
         LazyColumn(
             Modifier.padding(pad), contentPadding = PaddingValues(16.dp),
@@ -48,7 +59,7 @@ fun HomeScreen(onVenueClick: (String) -> Unit, vm: HomeViewModel = hiltViewModel
                     Text("Search venues or city", style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(
-                        value = state.query, onValueChange = vm::onQuery, singleLine = true,
+                        value = state.query, onValueChange = onQueryChange, singleLine = true,
                         leadingIcon = { Icon(Icons.Default.Search, null) },
                         placeholder = { Text("Search venues or city") },
                         shape = RoundedCornerShape(12.dp),
@@ -61,9 +72,9 @@ fun HomeScreen(onVenueClick: (String) -> Unit, vm: HomeViewModel = hiltViewModel
             }
             item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item { OptionChip("All", state.sport == null, { vm.onSport(null) }) }
+                    item { OptionChip("All", state.sport == null, { onSportChange(null) }) }
                     items(SportType.entries.toList()) { s ->
-                        OptionChip(s.label, state.sport == s, { vm.onSport(if (state.sport == s) null else s) })
+                        OptionChip(s.label, state.sport == s, { onSportChange(if (state.sport == s) null else s) })
                     }
                 }
             }

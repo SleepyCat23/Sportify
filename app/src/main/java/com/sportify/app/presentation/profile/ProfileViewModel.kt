@@ -1,6 +1,5 @@
 package com.sportify.app.presentation.profile
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sportify.app.domain.model.User
@@ -20,7 +19,10 @@ class ProfileViewModel @Inject constructor(private val auth: AuthRepository) : V
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProfileUi())
 
     fun saveName(name: String) = launchBusy("Profile updated") { auth.updateName(name.trim()) }
-    fun uploadPhoto(uri: Uri) = launchBusy("Photo updated") { auth.uploadProfilePhoto(uri) }
+
+    /** The image's Uri is passed as a String so this class has no android.net.Uri dependency. */
+    fun uploadPhoto(uri: String) = launchBusy("Photo updated") { auth.uploadProfilePhoto(uri) }
+
     fun signOut() = auth.signOut()
 
     private fun launchBusy(ok: String, block: suspend () -> Result<Unit>) = viewModelScope.launch {

@@ -19,6 +19,7 @@ import com.sportify.app.domain.model.BookingStatus
 import com.sportify.app.presentation.common.*
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
 import com.stripe.android.paymentsheet.rememberPaymentSheet
 import kotlinx.coroutines.delay
 
@@ -44,7 +45,13 @@ private fun rememberSecondsLeft(expiresAt: Long?): Long {
 fun CheckoutScreen(onDone: () -> Unit, onBack: () -> Unit, vm: CheckoutViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val sheet = rememberPaymentSheet { result -> vm.onPaymentResult(result) }
+    val sheet = rememberPaymentSheet { result ->
+        when (result) {
+            is PaymentSheetResult.Completed -> vm.onPaymentCompleted()
+            is PaymentSheetResult.Canceled -> vm.onPaymentCanceled()
+            is PaymentSheetResult.Failed -> vm.onPaymentFailed(result.error.localizedMessage)
+        }
+    }
 
     // Present Stripe's PaymentSheet once the server returned a client secret.
     LaunchedEffect(ui.session) {

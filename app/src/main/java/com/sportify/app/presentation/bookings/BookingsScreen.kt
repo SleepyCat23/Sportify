@@ -17,8 +17,14 @@ import com.sportify.app.domain.model.BookingStatus
 import com.sportify.app.presentation.common.*
 
 @Composable
-fun BookingsScreen(onPay: (String) -> Unit, vm: BookingsViewModel = hiltViewModel()) {
+fun BookingsRoute(onPay: (String) -> Unit, vm: BookingsViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
+    BookingsScreen(ui, onPay, onCancel = vm::cancel)
+}
+
+/** Stateless: the list, and what to do on Pay / Cancel, are passed in. */
+@Composable
+fun BookingsScreen(ui: BookingsUi, onPay: (String) -> Unit, onCancel: (Booking) -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
     var toCancel by remember { mutableStateOf<Booking?>(null) }
     val now = System.currentTimeMillis()
@@ -66,7 +72,7 @@ fun BookingsScreen(onPay: (String) -> Unit, vm: BookingsViewModel = hiltViewMode
             title = { Text("Cancel booking?") },
             text = { Text(if (b.paymentStatus == "PAID")
                 "Bookings cancelled at least 2 hours before start are refunded automatically." else "This will release your slot.") },
-            confirmButton = { TextButton({ vm.cancel(b); toCancel = null }) { Text("Cancel booking") } },
+            confirmButton = { TextButton({ onCancel(b); toCancel = null }) { Text("Cancel booking") } },
             dismissButton = { TextButton({ toCancel = null }) { Text("Keep") } }
         )
     }

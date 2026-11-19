@@ -1,0 +1,23 @@
+Add to app/build.gradle.kts (merge into the existing blocks, then Sync):
+
+android {
+    defaultConfig {
+        // add this line inside the existing defaultConfig { }
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    // add this block inside android { }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+}
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("app.cash.turbine:turbine:1.1.0")   // optional (cek_proyek.sh only warns)
+
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.10.01")) // same BoM as implementation()
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+}

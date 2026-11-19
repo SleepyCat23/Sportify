@@ -28,7 +28,7 @@ fun ProfileScreen(vm: ProfileViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     val user = ui.user
     var name by remember(user?.name) { mutableStateOf(user?.name.orEmpty()) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::uploadPhoto) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.uploadPhoto(it.toString()) } }
 
     Scaffold(topBar = { CenterAlignedTopAppBar(title = { Text("Profile", fontWeight = FontWeight.Bold) }) }) { pad ->
         Column(Modifier.padding(pad).padding(24.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,

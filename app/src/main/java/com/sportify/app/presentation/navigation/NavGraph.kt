@@ -18,9 +18,11 @@ import androidx.lifecycle.viewModelScope
 import com.sportify.app.domain.repository.AuthRepository
 import com.sportify.app.presentation.auth.LoginScreen
 import com.sportify.app.presentation.auth.RegisterScreen
+import com.sportify.app.presentation.bookings.BookingsRoute
 import com.sportify.app.presentation.bookings.BookingsScreen
 import com.sportify.app.presentation.checkout.CheckoutScreen
 import com.sportify.app.presentation.common.CenterLoading
+import com.sportify.app.presentation.home.HomeRoute
 import com.sportify.app.presentation.home.HomeScreen
 import com.sportify.app.presentation.profile.ProfileScreen
 import com.sportify.app.presentation.venue.VenueDetailScreen
@@ -92,8 +94,8 @@ private fun MainGraph() {
         }
     }) { pad ->
         NavHost(nav, startDestination = Tab.Home.route, modifier = Modifier.padding(pad).consumeWindowInsets(pad)) {
-            composable(Tab.Home.route) { HomeScreen(onVenueClick = { nav.navigate("venue/$it") }) }
-            composable(Tab.Bookings.route) { BookingsScreen(onPay = { nav.navigate("checkout/$it") }) }
+            composable(Tab.Home.route) { HomeRoute(onVenueClick = { nav.navigate("venue/$it") }) }
+            composable(Tab.Bookings.route) { BookingsRoute(onPay = { nav.navigate("checkout/$it") }) }
             composable(Tab.Profile.route) { ProfileScreen() }
             composable("venue/{venueId}") {
                 VenueDetailScreen(onBack = { nav.popBackStack() }, onBookingCreated = { id -> nav.navigate("checkout/$id") })
