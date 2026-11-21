@@ -26,6 +26,11 @@ interface VenueRepository {
     fun observeBookedHours(courtId: String, date: String): Flow<Set<Int>>
 }
 
+interface FavoriteRepository {
+    fun observeFavoriteVenueIds(): Flow<Set<String>>
+    suspend fun setFavorite(venueId: String, favorite: Boolean): Result<Unit>
+}
+
 interface BookingRepository {
     suspend fun createPendingBooking(
         venue: Venue, court: Court, date: LocalDate, startHour: Int, durationHours: Int

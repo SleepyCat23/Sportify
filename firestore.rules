@@ -5,6 +5,10 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read, create, update: if signedIn() && request.auth.uid == uid;
+
+      match /favorites/{venueId} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
+      }
     }
 
     // Catalogue is read-only for clients; manage via console / admin SDK.

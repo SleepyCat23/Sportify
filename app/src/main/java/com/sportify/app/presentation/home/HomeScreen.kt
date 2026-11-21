@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,11 +30,14 @@ import coil.compose.AsyncImage
 import com.sportify.app.domain.model.SportType
 import com.sportify.app.presentation.common.*
 import com.sportify.app.presentation.theme.Green
+import com.sportify.app.presentation.favorites.FavoritesViewModel
 
 @Composable
 fun HomeRoute(onVenueClick: (String) -> Unit, vm: HomeViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
-    HomeScreen(state, vm::onQuery, vm::onSport, onVenueClick)
+    val favoritesVm: FavoritesViewModel = hiltViewModel()
+    val favorites by favoritesVm.ui.collectAsStateWithLifecycle()
+    HomeScreen(state, vm::onQuery, vm::onSport, onVenueClick, favorites.favoriteIds, favoritesVm::toggle)
 }
 
 /** Stateless: everything arrives as parameters, so UI tests need no ViewModel or Hilt. */
@@ -41,7 +46,9 @@ fun HomeScreen(
     state: HomeState,
     onQueryChange: (String) -> Unit,
     onSportChange: (SportType?) -> Unit,
-    onVenueClick: (String) -> Unit
+    onVenueClick: (String) -> Unit,
+    favoriteIds: Set<String> = emptySet(),
+    onToggleFavorite: (String) -> Unit = {}
 ) {
     Scaffold { pad ->
         LazyColumn(
@@ -83,14 +90,18 @@ fun HomeScreen(
                 state.venues.isEmpty() -> item {
                     Text("No venues found", Modifier.padding(32.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                else -> items(state.venues, key = { it.venue.id }) { VenueCard(it) { onVenueClick(it.venue.id) } }
+                else -> items(state.venues, key = { it.venue.id }) { item ->
+                    VenueCard(item, favoriteIds.contains(item.venue.id),
+                        onClick = { onVenueClick(item.venue.id) },
+                        onToggleFavorite = { onToggleFavorite(item.venue.id) })
+                }
             }
         }
     }
 }
 
 @Composable
-private fun VenueCard(item: VenueItem, onClick: () -> Unit) {
+private fun VenueCard(item: VenueItem, isFavorite: Boolean, onClick: () -> Unit, onToggleFavorite: () -> Unit) {
     val venue = item.venue
     SportifyCard(Modifier.fillMaxWidth(), onClick = onClick) {
         Box {
@@ -101,6 +112,11 @@ private fun VenueCard(item: VenueItem, onClick: () -> Unit) {
             Box(Modifier.matchParentSize().background(
                 Brush.verticalGradient(listOf(Color.Transparent, Color(0x99000000)))
             ))
+            IconButton(onClick = onToggleFavorite, modifier = Modifier.align(Alignment.TopEnd)) {
+                Icon(if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Remove ${venue.name} from favorites" else "Add ${venue.name} to favorites",
+                    tint = if (isFavorite) MaterialTheme.colorScheme.error else Color.White)
+            }
             Text(
                 sportLabel(venue.sports.firstOrNull().orEmpty()), color = Color.White,
                 fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall,

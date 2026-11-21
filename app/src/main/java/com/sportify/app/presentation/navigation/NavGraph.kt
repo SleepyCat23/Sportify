@@ -24,6 +24,7 @@ import com.sportify.app.presentation.checkout.CheckoutScreen
 import com.sportify.app.presentation.common.CenterLoading
 import com.sportify.app.presentation.home.HomeRoute
 import com.sportify.app.presentation.home.HomeScreen
+import com.sportify.app.presentation.favorites.FavoritesRoute
 import com.sportify.app.presentation.profile.ProfileScreen
 import com.sportify.app.presentation.venue.VenueDetailScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,6 +49,7 @@ class RootViewModel @Inject constructor(private val auth: AuthRepository) : View
 
 private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     Home("home", "Explore", Icons.Default.Explore),
+    Favorites("favorites", "Favorites", Icons.Default.Favorite),
     Bookings("bookings", "Bookings", Icons.Default.EventAvailable),
     Profile("profile", "Profile", Icons.Default.Person)
 }
@@ -95,6 +97,7 @@ private fun MainGraph() {
     }) { pad ->
         NavHost(nav, startDestination = Tab.Home.route, modifier = Modifier.padding(pad).consumeWindowInsets(pad)) {
             composable(Tab.Home.route) { HomeRoute(onVenueClick = { nav.navigate("venue/$it") }) }
+            composable(Tab.Favorites.route) { FavoritesRoute(onVenueClick = { nav.navigate("venue/$it") }) }
             composable(Tab.Bookings.route) { BookingsRoute(onPay = { nav.navigate("checkout/$it") }) }
             composable(Tab.Profile.route) { ProfileScreen() }
             composable("venue/{venueId}") {

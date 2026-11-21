@@ -29,6 +29,7 @@ object FirebaseModule {
 abstract class RepositoryModule {
     @Binds abstract fun auth(impl: AuthRepositoryImpl): AuthRepository
     @Binds abstract fun venues(impl: VenueRepositoryImpl): VenueRepository
+    @Binds abstract fun favorites(impl: FavoriteRepositoryImpl): FavoriteRepository
     @Binds abstract fun bookings(impl: BookingRepositoryImpl): BookingRepository
     @Binds abstract fun payments(impl: PaymentRepositoryImpl): PaymentRepository
 }
