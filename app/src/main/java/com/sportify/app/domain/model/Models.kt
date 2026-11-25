@@ -17,7 +17,8 @@ data class User(
     val name: String = "",
     val email: String = "",
     val photoUrl: String = "",
-    val fcmToken: String = ""
+    val fcmToken: String = "",
+    val role: String = "USER"            // USER | ADMIN (ADMIN can only be set from the console)
 )
 
 data class Venue(
@@ -28,7 +29,8 @@ data class Venue(
     val city: String = "",
     val imageUrl: String = "",
     val sports: List<String> = emptyList(),   // SportType names
-    val rating: Double = 0.0,
+    val rating: Double = 0.0,            // maintained by the onReviewWritten Cloud Function
+    val reviewCount: Int = 0,
     val openHour: Int = 8,
     val closeHour: Int = 22
 )

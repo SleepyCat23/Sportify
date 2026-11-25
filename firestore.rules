@@ -2,18 +2,29 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    // Admins are marked by users/{uid}.role == 'ADMIN'. Set it from the console / Admin SDK only.
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'USER') == 'ADMIN';
+    }
 
     match /users/{uid} {
-      allow read, create, update: if signedIn() && request.auth.uid == uid;
+      allow read: if isOwner(uid) || isAdmin();
+      // nobody can grant themselves the admin role
+      allow create: if isOwner(uid) && request.resource.data.get('role', 'USER') == 'USER';
+      allow update: if isOwner(uid)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
 
       match /favorites/{venueId} {
-        allow read, write: if signedIn() && request.auth.uid == uid;
+        allow read, write: if isOwner(uid);
       }
     }
 
-    // Catalogue is read-only for clients; manage via console / admin SDK.
-    match /venues/{id} { allow read: if signedIn(); allow write: if false; }
-    match /courts/{id} { allow read: if signedIn(); allow write: if false; }
+    // Catalogue: everyone signed in can read, only admins can add / edit / delete venues and courts.
+    match /venues/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /courts/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
 
     // Hourly slot locks. Deterministic ids (courtId_date_hour) make double-booking impossible.
     match /slots/{slotId} {
@@ -27,11 +38,11 @@ service cloud.firestore {
         && request.resource.data.status == 'PENDING'
         && resource.data.status == 'PENDING'
         && resource.data.expiresAt < request.time;
-      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /bookings/{id} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       // Clients can only create unpaid, pending bookings
       allow create: if signedIn()
         && request.resource.data.userId == request.auth.uid
@@ -39,10 +50,54 @@ service cloud.firestore {
         && request.resource.data.paymentStatus == 'UNPAID';
       // ...and can only cancel. Payment fields are written exclusively by Cloud Functions.
       allow update: if signedIn()
-        && resource.data.userId == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && request.resource.data.status == 'CANCELLED';
+        && ((resource.data.userId == request.auth.uid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+              && request.resource.data.status == 'CANCELLED')
+            // admins may cancel unpaid bookings (e.g. when a venue is removed)
+            || (isAdmin()
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+              && request.resource.data.status == 'CANCELLED'));
       allow delete: if false;
+    }
+
+    // One review per user per venue (doc id = venueId_userId). venue.rating is recomputed by a Cloud Function.
+    match /reviews/{id} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && id == request.resource.data.venueId + '_' + request.auth.uid
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Open play games. Non-hosts may only add/remove their own join request or leave the game.
+    match /openPlays/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.hostId == request.auth.uid
+        && request.resource.data.members == [request.auth.uid];
+      allow update: if signedIn() && (
+        resource.data.hostId == request.auth.uid ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['requests', 'names', 'members'])
+          && request.resource.data.members.size() <= resource.data.members.size()));
+      allow delete: if signedIn() && (resource.data.hostId == request.auth.uid || isAdmin());
+    }
+
+    // Public matchmaking profiles, invites and score history.
+    match /players/{uid} {
+      allow read: if signedIn();
+      allow write: if isOwner(uid);
+    }
+    match /invites/{id} {
+      allow read: if signedIn() && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.status == 'PENDING';
+      allow update: if signedIn() && resource.data.toUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    }
+    match /matches/{id} {
+      allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
     }
   }
 }

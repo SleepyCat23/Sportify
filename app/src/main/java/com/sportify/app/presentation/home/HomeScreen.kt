@@ -1,5 +1,6 @@
 package com.sportify.app.presentation.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -7,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Favorite
@@ -14,6 +16,9 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -37,7 +42,10 @@ fun HomeRoute(onVenueClick: (String) -> Unit, vm: HomeViewModel = hiltViewModel(
     val state by vm.state.collectAsStateWithLifecycle()
     val favoritesVm: FavoritesViewModel = hiltViewModel()
     val favorites by favoritesVm.ui.collectAsStateWithLifecycle()
-    HomeScreen(state, vm::onQuery, vm::onSport, onVenueClick, favorites.favoriteIds, favoritesVm::toggle)
+    HomeScreen(
+        state, vm::onQuery, vm::onSport, onVenueClick, favorites.favoriteIds, favoritesVm::toggle,
+        vm::onCity, vm::onMinRating, vm::onMaxPrice
+    )
 }
 
 /** Stateless: everything arrives as parameters, so UI tests need no ViewModel or Hilt. */
@@ -48,7 +56,10 @@ fun HomeScreen(
     onSportChange: (SportType?) -> Unit,
     onVenueClick: (String) -> Unit,
     favoriteIds: Set<String> = emptySet(),
-    onToggleFavorite: (String) -> Unit = {}
+    onToggleFavorite: (String) -> Unit = {},
+    onCityChange: (String?) -> Unit = {},
+    onMinRatingChange: (Double) -> Unit = {},
+    onMaxPriceChange: (Double?) -> Unit = {}
 ) {
     Scaffold { pad ->
         LazyColumn(
@@ -82,6 +93,25 @@ fun HomeScreen(
                     item { OptionChip("All", state.sport == null, { onSportChange(null) }) }
                     items(SportType.entries.toList()) { s ->
                         OptionChip(s.label, state.sport == s, { onSportChange(if (state.sport == s) null else s) })
+                    }
+                }
+            }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        FilterMenu("City", state.city ?: "All",
+                            listOf<Pair<String, String?>>("All cities" to null) + state.cities.map { it to it },
+                            onCityChange)
+                    }
+                    item {
+                        FilterMenu("Rating", if (state.minRating == 0.0) "Any" else "%.1f+".format(state.minRating),
+                            listOf("Any" to 0.0, "4.0 and up" to 4.0, "4.5 and up" to 4.5), onMinRatingChange)
+                    }
+                    item {
+                        FilterMenu("Price", state.maxPrice?.let { "≤ " + formatMoney(it, state.currency) } ?: "Any",
+                            listOf<Pair<String, Double?>>("Any" to null) +
+                                state.prices.map { "Up to ${formatMoney(it, state.currency)}" to it },
+                            onMaxPriceChange)
                     }
                 }
             }
@@ -148,6 +178,26 @@ private fun VenueCard(item: VenueItem, isFavorite: Boolean, onClick: () -> Unit,
                     },
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> FilterMenu(label: String, current: String, options: List<Pair<String, T>>, onSelect: (T) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(
+            onClick = { open = true }, shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White, contentColor = MaterialTheme.colorScheme.onSurface)
+        ) {
+            Text("$label: $current", style = MaterialTheme.typography.labelLarge)
+            Icon(Icons.Default.ArrowDropDown, null)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEach { (text, value) ->
+                DropdownMenuItem(text = { Text(text) }, onClick = { onSelect(value); open = false })
             }
         }
     }

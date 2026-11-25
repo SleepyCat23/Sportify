@@ -139,6 +139,7 @@ fun VenueDetailScreen(
                     }
                 }
             }
+            item { ReviewsSection(venue?.name.orEmpty()) }
         }
     }
 }
