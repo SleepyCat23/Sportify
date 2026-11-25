@@ -44,3 +44,44 @@ interface PaymentRepository {
     suspend fun createPaymentSession(bookingId: String): Result<PaymentSession>
     suspend fun confirmPayment(bookingId: String): Result<Unit>
 }
+
+// ---------------- Social, reviews & admin ----------------
+
+interface ReviewRepository {
+    fun observeReviews(venueId: String): Flow<List<Review>>
+    suspend fun addReview(venueId: String, venueName: String, rating: Int, comment: String): Result<Unit>
+}
+
+interface OpenPlayRepository {
+    fun observeOpenPlays(): Flow<List<OpenPlay>>
+    suspend fun create(title: String, sport: String, venueName: String, date: String, startHour: Int, maxPlayers: Int): Result<Unit>
+    suspend fun requestJoin(playId: String): Result<Unit>
+    /** Withdraws a pending request or leaves the game. */
+    suspend fun leave(playId: String): Result<Unit>
+    /** Host only. Approving a request in a full game is ignored. */
+    suspend fun decide(playId: String, uid: String, approve: Boolean): Result<Unit>
+    suspend fun delete(playId: String): Result<Unit>
+}
+
+interface MatchRepository {
+    fun observeMyPlayer(): Flow<Player?>
+    suspend fun saveMyPlayer(level: String, sport: String): Result<Unit>
+    fun observePlayers(): Flow<List<Player>>
+    fun observeInvites(): Flow<List<Invite>>
+    suspend fun invite(to: Player): Result<Unit>
+    suspend fun respond(invite: Invite, accept: Boolean): Result<Unit>
+    fun observeMyResults(): Flow<List<MatchResult>>
+    suspend fun addResult(opponent: String, sport: String, myScore: Int, theirScore: Int): Result<Unit>
+}
+
+interface AdminRepository {
+    fun observeAllBookings(): Flow<List<Booking>>
+    fun observeAllReviews(): Flow<List<Review>>
+    suspend fun addVenue(venue: Venue, firstCourt: Court): Result<Unit>
+    /** Cancels (and refunds, if paid) every upcoming booking, then removes the venue, its courts and reviews. */
+    suspend fun deleteVenue(venueId: String): Result<Unit>
+    suspend fun updateCourtPrice(courtId: String, price: Double): Result<Unit>
+    suspend fun updateHours(venueId: String, openHour: Int, closeHour: Int): Result<Unit>
+    suspend fun refund(bookingId: String): Result<Unit>
+    suspend fun deleteReview(reviewId: String): Result<Unit>
+}

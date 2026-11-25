@@ -19,5 +19,10 @@ const venues = [
     for (const [i, [name, sport, price]] of courts.entries())
       await db.collection("courts").doc(`${id}_c${i + 1}`).set({ venueId: id, name, sport, pricePerHour: price, currency: "USD" });
   }
+  // Make an existing account an admin (run with ADMIN_UID=<uid from Firebase Auth> node seed.js)
+  if (process.env.ADMIN_UID) {
+    await db.collection("users").doc(process.env.ADMIN_UID).set({ role: "ADMIN" }, { merge: true });
+    console.log("Admin role granted to", process.env.ADMIN_UID);
+  }
   console.log("Seeded.");
 })();

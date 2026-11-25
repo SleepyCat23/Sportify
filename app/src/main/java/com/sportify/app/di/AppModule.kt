@@ -32,4 +32,8 @@ abstract class RepositoryModule {
     @Binds abstract fun favorites(impl: FavoriteRepositoryImpl): FavoriteRepository
     @Binds abstract fun bookings(impl: BookingRepositoryImpl): BookingRepository
     @Binds abstract fun payments(impl: PaymentRepositoryImpl): PaymentRepository
+    @Binds abstract fun reviews(impl: ReviewRepositoryImpl): ReviewRepository
+    @Binds abstract fun openPlays(impl: OpenPlayRepositoryImpl): OpenPlayRepository
+    @Binds abstract fun matches(impl: MatchRepositoryImpl): MatchRepository
+    @Binds abstract fun admin(impl: AdminRepositoryImpl): AdminRepository
 }

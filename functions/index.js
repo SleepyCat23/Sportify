@@ -1,6 +1,6 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { defineSecret, defineString } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 
@@ -155,4 +155,42 @@ exports.sendBookingReminders = onSchedule("every 15 minutes", async () => {
       `${b.venueName} · ${b.courtName} at ${String(b.startHour).padStart(2, "0")}:00`, { bookingId: doc.id });
     await doc.ref.update({ reminderSent: true });
   }
+});
+
+
+// ---------- admin: refund + cancel any booking (even inside the 2-hour window) ----------
+exports.adminRefund = onCall({ secrets: [STRIPE_SECRET] }, async (req) => {
+  if (!req.auth) throw new HttpsError("unauthenticated", "Please sign in.");
+  const me = await db.collection("users").doc(req.auth.uid).get();
+  if (!me.exists || me.data().role !== "ADMIN") throw new HttpsError("permission-denied", "Admins only.");
+  const bookingId = req.data && req.data.bookingId;
+  if (!bookingId) throw new HttpsError("invalid-argument", "bookingId required");
+
+  const ref = db.collection("bookings").doc(bookingId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError("not-found", "Booking not found");
+  const b = snap.data();
+
+  const wasPaid = b.paymentStatus === "PAID";
+  if (wasPaid && b.paymentIntentId) await stripeClient().refunds.create({ payment_intent: b.paymentIntentId });
+  // paymentStatus changes in the same write, so onBookingCancelled will not refund a second time
+  await ref.update({ status: "CANCELLED", paymentStatus: wasPaid ? "REFUNDED" : b.paymentStatus });
+  const batch = db.batch();
+  slotIds(b).forEach((id) => batch.delete(db.collection("slots").doc(id)));
+  await batch.commit();
+  await notify(b.userId, "Booking cancelled by the venue",
+    wasPaid ? `Your booking at ${b.venueName} was refunded.` : `Your booking at ${b.venueName} was cancelled.`, { bookingId });
+  return { ok: true };
+});
+
+// ---------- keep venues.rating / reviewCount in sync with the reviews collection ----------
+exports.onReviewWritten = onDocumentWritten("reviews/{id}", async (event) => {
+  const doc = event.data.after.exists ? event.data.after : event.data.before;
+  const venueId = doc.data().venueId;
+  const venueRef = db.collection("venues").doc(venueId);
+  if (!(await venueRef.get()).exists) return; // venue was deleted
+  const snap = await db.collection("reviews").where("venueId", "==", venueId).get();
+  const n = snap.size;
+  const avg = n ? snap.docs.reduce((a, d) => a + d.data().rating, 0) / n : 0;
+  await venueRef.update({ rating: Math.round(avg * 10) / 10, reviewCount: n });
 });

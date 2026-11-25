@@ -5,6 +5,8 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -31,7 +33,7 @@ fun ProfileScreen(vm: ProfileViewModel = hiltViewModel()) {
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.uploadPhoto(it.toString()) } }
 
     Scaffold(topBar = { CenterAlignedTopAppBar(title = { Text("Profile", fontWeight = FontWeight.Bold) }) }) { pad ->
-        Column(Modifier.padding(pad).padding(24.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
+        Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(24.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(Modifier.size(112.dp).clip(CircleShape).clickable {
                 picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -53,7 +55,8 @@ fun ProfileScreen(vm: ProfileViewModel = hiltViewModel()) {
                 Text("Save changes")
             }
             ui.message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
-            Spacer(Modifier.weight(1f))
+            StatsSection()
+            Spacer(Modifier.height(8.dp))
             OutlinedButton(vm::signOut, Modifier.fillMaxWidth()) { Text("Sign out") }
         }
     }
